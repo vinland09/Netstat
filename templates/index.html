@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Netstat Viewer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        pre {
+            background-color: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            max-height: 400px;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Netstat Data</h1>
+
+    <!-- Exibição geral do Netstat -->
+    <h3>Saída Completa do Netstat</h3>
+    <pre id="netstat-output">Carregando...</pre>
+    <p id="error-message" class="error" style="display: none;"></p>
+
+    <!-- Formulário para filtrar por IP -->
+    <h3>Filtrar por IP</h3>
+    <form id="ipForm">
+        <input type="text" id="ipInput" placeholder="Digite um IP para filtrar" required>
+        <button type="submit">Filtrar</button>
+    </form>
+    <pre id="filtered-output">Resultado será exibido aqui...</pre>
+
+    <script>
+        // Função para buscar os dados do Netstat
+        async function fetchNetstat() {
+            try {
+                const response = await fetch('/netstat');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                const data = await response.json();
+                if (data.netstat_output) {
+                    document.getElementById('netstat-output').textContent = data.netstat_output.join('\n');
+                } else if (data.error) {
+                    document.getElementById('error-message').textContent = data.error;
+                    document.getElementById('error-message').style.display = 'block';
+                }
+            } catch (error) {
+                document.getElementById('error-message').textContent = `Erro ao buscar dados do Netstat: ${error.message}`;
+                document.getElementById('error-message').style.display = 'block';
+                console.error('Erro ao buscar dados do Netstat:', error);
+            }
+        }
+
+        // Função para filtrar os dados do Netstat por IP
+        document.getElementById('ipForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const ip = document.getElementById('ipInput').value.trim();
+            if (ip) {
+                try {
+                    const response = await fetch(`/netstat/${ip}`);
+                    const data = await response.json();
+                    if (response.ok) {
+                        document.getElementById('filtered-output').textContent = data.netstat_output.join('\n');
+                    } else {
+                        document.getElementById('filtered-output').textContent = data.message || data.error;
+                    }
+                } catch (error) {
+                    document.getElementById('filtered-output').textContent = "Erro ao buscar dados.";
+                    console.error("Erro:", error);
+                }
+            }
+        });
+
+        // Chama a função ao carregar a página
+        fetchNetstat();
+    </script>
+</body>
+</html>
